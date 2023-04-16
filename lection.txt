@@ -1,0 +1,153 @@
+<p>
+Для того, чтобы элементы можно было перетаскивать им нужно установить атрибут dragable='true'
+</p>
+<p>
+Затем мы должны отлавливать события dragstart, dragstop, которые существуют в любом браузере.
+</p>
+<p>
+У нас есть несколько событий связанных с drag и drop, для этого перейдем по адресу <a href='https://developer.mozilla.org/ru/docs/Web/API/HTML_Drag_and_Drop_API'>https://developer.mozilla.org/ru/docs/Web/API/HTML_Drag_and_Drop_API</a>
+</p>
+<p>
+Здесь мы увидим события: dragover, dragleave, drag, drop, dragend
+</p>
+<p>
+Начнем с dragItem, для каждого из них у нас есть 2 события - это когда мы начали - dragstart<br/>
+и когда мы перестали перетаскивать dragend, когда мы просто отпустили. <br/>
+Начали dragstart, отпустили dragend
+</p>
+<pre>
+dragItems.forEach(dragItem => {
+    dragItem.addEventListener('dragstart', handlerDragStart);
+    dragItem.addEventListener('dragend', handlerDragEnd);
+    dragItem.addEventListener('drag', handleDrag);
+});
+</pre>
+<p>
+Итак у нас есть 2 функции, и они принимают в виде аргумента event, внутри этого метода на this будет ссылка на тот DOM элемент, который мы прослушиваем.
+</p>
+<pre>
+function handleDragStart(event) {
+    console.log('dragstart', this);
+};
+function handleDragEnd(event) {
+    console.log('dragend', this);
+};
+
+fucntion handleDrag(event) {
+    console.log('drag', this);
+}
+</pre>
+<p>
+Проверяем в консоли и видим наши переносы. Т.е. чисто технически, если нам нужно с помощью css стилей отметить, какой элементы мы сейчас переносим, мы
+можем это делать с помощью css стилей.<br/>
+Например, зададим, во время перетаскивания класс dragItem_active
+</p>
+<p>
+Теперь обратим внимание, что отдельным событием у нас есть просто drag, это событие, которые вызывается постоянно во время переноса элемента.
+</p>
+<p>
+У нас есть ZONES куда мы перетаскиваем нашим элементы у них есть свой набор событий: dragenter, dragleave и dragover
+</p>
+<p>
+Теперь переберем dropZones и навешивать события будем теперь на них
+</p>
+<pre>
+dropZones.forEach(dropZone=>{
+    dropZone.addEventListener('dragender', dragEnderHandler);
+    dropZone.addEventListener('dragleave', dragLeaveHandler);
+    dropZone.addEventListener('dragover', dragOverHandler);
+});
+
+function dragEnterHandler(event) {
+    console.log('dragenter', this);
+}
+function dragLeaveHandler(event) {
+    console.log('dragleave', this);
+}
+function dragOverHandler(event) {
+    console.log('dragover', this);
+}
+</pre>
+<p>
+Таким образом мы можем обрабатывать область над которой находится элемент, который мы перетаскиваем.
+</p>
+<p>
+Если мы теперь попробуем навести 10ку, на то место где эта 10 стояла, то рамка зоны потеряет свою активность, с чем эт может быть связано,
+это связано с тем, что эти события dragenter и dragleave они "всплывают", как и все события.
+Т.е. если мы начинаем водить над другим dragItem элементом, то у нас получается, что у нас сначала над этим элементом срабатывает dragenter и
+по всплытию срабатывает dragenter у его родительского элемента и с этим надо уметь работать использовать в своих целях. это не баг, а фича.
+</p>
+<p>
+У нас есть еще одно событие, которое завязано на зоне это dragover и оно тоже все время висит, пока идет перетаскивание.
+</p>
+<p>
+Но в чем отличие события drag от dragover? drag это событие того элемента, которое перетаскиваем, а dragover это событие того элемента, над которым
+сейчас находится перетаскиваемый элемент.
+</p>
+<p>
+Чтобы побороть всплытие, то грубо говоря, нужно начать игнорировать dragover и dragenter над другими элеменетами внутри нужного, над самим dragitem элементом.
+Давайте попробуем победить эту проблему.
+</p>
+<p>
+Мы рассмотрели все события кроме drop, вызывается для элемента, над которым произошло сбрасывание. Т.е. нам нужно прослушивать событие drop у dropZone элементов.
+</p>
+<p>
+Но если мы по аналогии пропишем обработчик события drop, то увидим, что ничего не отработало, но дело в том, что по умолчанию на это событие стоит заглушка, т.е.
+по умолчанию у нас есть запрет на возможность дропа. Поэтому нам нужно "отменить отмену", для этого в dragEnterHandler и dragOverHandler прописать event.preventDefault()
+</p>
+<p>
+Теперь нам нужно сбросить, но как это сделать, ведь мы в this видим, только тот элемент над которым мы сбросили, а вот какой элемент мы перетаскивали?
+Как получить элемент, который мы сбросили.
+</p>
+<p>
+Чисто технически у event, который связан c draganddrop есть отдельное свойство, которое называется dataTransfer - оно позволяет между обработчиками
+одного и того же события прокидывать информацию, по большому счету, что мы перетаскиваем, dom элемент или файл мы перетаскиваем с компьютера
+Тут так же есть информация, что нам нужно сделать с перетаскиваемым элементом, перетаскиваемый элементы мы копируем или просто перетаскиваем.
+</p>
+<p>
+<a href="developer.mozilla.org/en-US/docs/Web/API/DataTransfer">developer.mozilla.org/en-US/docs/Web/API/DataTransfer</a>
+</p>
+<p>
+Нам потребуется 4 метода: DataTransfer.clearData(), DataTransfer.getData(), DataTransfer.setData(), DataTransfer.setDragImage()
+</p>
+В DataTransfer.setData() можно передать строчку, передадим data-item перетаскиваемого элемента
+<pre>
+function handleDragStart(event) {
+    event.dataTransfer.setData("dragItem", this.dataset.dragItem);
+}
+</pre>
+<p>
+А секрет заключается в том, что мы этот event.getTransfer мы можем прочитать в drop событии над нужным элементом.
+</p>
+<pre>
+function dropHandler(event) {
+    event.dataTransfer.getData('dragItem');
+}
+</pre>
+<p>
+Мы как программисты берем на себя ответственность, что происходит после этого дропа.
+</p>
+<p>
+Однако работать с dataTransfer не очень удобно, так как мы не можем положить туда ничего сложнее чем строка.
+</p>
+<p>
+Поэтому мы через общую область видимости или через замыкание используем переменную внешнюю, которая помогает в процессе drag and drop.
+Создадим переменные, ссылающеся на то что мы перетаскиваем и куда мы перетаскиваем, создадим в глобальной области видимости переменные
+</p>
+<pre>
+let draggedItem = null;
+
+function handleDragStart(event) {
+    draggedItem = this;
+}
+
+
+// а в dragend мы эту переменную будем очищать
+function handleDragend(event) {
+    draggedItem = null;
+}
+
+</pre>
+<p>
+<a href="https://youtu.be/gmFHj_tg6g8?list=PL9mlH9etz6Dwh8TZVSwP4-twy8M4kU_oB&t=2559">https://youtu.be/gmFHj_tg6g8?list=PL9mlH9etz6Dwh8TZVSwP4-twy8M4kU_oB&t=2559</a>
+</p>
